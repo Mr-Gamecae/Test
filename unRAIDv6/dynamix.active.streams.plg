@@ -1,0 +1,98 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "dynamix.active.streams">
+<!ENTITY author    "Bergware">
+<!ENTITY version   "2015.04.28">
+<!ENTITY launch    "Tools/ActiveStreams">
+<!ENTITY pluginURL "https://raw.github.com/bergware/dynamix/master/unRAIDv6/&name;.plg">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+
+<CHANGES>
+##&name;
+
+###&version;
+- added Reset button on User Names page
+
+###2015.04.18
+- improved IP/Users list
+
+###2015.04.11
+- included online help information
+- better support for Plex streams
+
+###2015.01.22
+- version update for webGui 2015.01.21
+
+###2014.12.08
+- adjusted table to new css styling
+
+###2014.12.06
+- fixed wrong placement of config file
+- fixed regression error in names list
+
+###2014.12.05
+- fixed wrong file size display
+- fixed compatability issue with unRAID v6
+
+###2014.11.28
+- initial release for unRAID v6
+</CHANGES>
+
+<!--
+Copyright 2015, Bergware International
+Dynamix Active Streams - Real-time monitoring of SMB shares
+-->
+
+<!--
+The 'pre-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Remove old 'source' files
+rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null|grep -v '&version;')
+</INLINE>
+</FILE>
+
+<!--
+The 'source' file.
+-->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>https://raw.github.com/bergware/dynamix/master/archive/&name;-&version;.txz</URL>
+</FILE>
+
+<!--
+The 'post-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Update file access mode
+chmod 644 $(awk '/\.(htm|php|js|page|css|png|plg|gif|cfg|md)$/ {print "/"$0}' /var/log/packages/&name;-&version;)
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " Plugin &name; is installed."
+echo " This plugin requires Dynamix webGui to operate"
+echo " Copyright 2015, Bergware International"
+echo " Version: &version;"
+echo "-----------------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+<!--
+The 'remove' script.
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+# Remove plugin related files
+rm -rf /boot/config/plugins/&name;
+
+# Uninstall the 'source' package
+removepkg &name;-&version;
+</INLINE>
+</FILE>
+
+</PLUGIN>

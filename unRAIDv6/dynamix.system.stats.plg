@@ -1,0 +1,119 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "dynamix.system.stats">
+<!ENTITY author    "Bergware">
+<!ENTITY version   "2015.04.28">
+<!ENTITY launch    "Settings/StatSettings">
+<!ENTITY pluginURL "https://raw.github.com/bergware/dynamix/master/unRAIDv6/&name;.plg">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+
+<CHANGES>
+##&name;
+
+###&version;
+- added Reset button on settings page
+
+###2015.04.18
+- fixed top field position
+
+###2015.04.11
+- included online help information
+
+###2015.02.21
+- support of new cron mechanism
+
+###2015.02.15
+- workaround to restore /var/log permissions
+
+###2015.01.22
+- version update for webGui 2015.01.21
+
+###2014.12.05
+- use global disk utilization thresholds
+- fixed cron error message about sa1
+- fixed display error when array in maintenance mode
+
+###2014.12.01
+- fixed cache disk pool display in Disk Stats.
+
+###2014.11.28
+- initial release for unRAID v6
+</CHANGES>
+
+<!--
+Copyright 2015, Bergware International
+Dynamix System Stats - disk and system usage graphs
+-->
+
+<!--
+The 'pre-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Remove old 'source' files
+rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null|grep -v '&version;')
+# Remove legacy cron entry (if existing)
+crontab -l|sed '/^# System data collection/d;/\/usr\/lib\/sa\/sa1/d'|crontab -
+</INLINE>
+</FILE>
+
+<!--
+The 'source' file.
+-->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>https://raw.github.com/bergware/dynamix/master/archive/&name;-&version;.txz</URL>
+</FILE>
+
+<!--
+The 'post-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Create sa directory (workaround)
+mkdir -p /var/log/sa
+
+# Create cron entry
+cron=/boot/config/plugins/&name;/sysstats.cron
+if [[ ! -f $cron ]]; then
+  echo '# Generated system data collection schedule:' > $cron
+  echo -e '*/1 * * * * /usr/lib/sa/sa1 1 1 &amp;> /dev/null\n' >>$cron
+  /usr/local/sbin/update_cron
+fi
+
+# Update file access mode
+chmod 644 $(awk '/\.(htm|php|js|page|css|png|plg|gif|cfg|md)$/ {print "/"$0}' /var/log/packages/&name;-&version;)
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " Plugin &name; is installed."
+echo " This plugin requires Dynamix webGui to operate"
+echo " Copyright 2015, Bergware International"
+echo " Version: &version;"
+echo "-----------------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+<!--
+The 'remove' script.
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+# Remove cron entry
+cron=/tmp/sa1.tmp
+crontab -l|grep -v '# System data'|grep -v '/sa/sa1' > $cron
+crontab $cron
+rm -f $cron
+
+# Remove plugin related files
+rm -rf /boot/config/plugins/&name;
+
+# Uninstall the 'source' package
+removepkg &name;-&version;
+</INLINE>
+</FILE>
+
+</PLUGIN>

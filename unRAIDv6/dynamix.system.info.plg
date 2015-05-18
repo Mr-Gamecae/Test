@@ -1,0 +1,113 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "dynamix.system.info">
+<!ENTITY author    "Bergware">
+<!ENTITY version   "2015.04.23">
+<!ENTITY launch    "Tools/SystemProfiler">
+<!ENTITY pluginURL "https://raw.github.com/bergware/dynamix/master/unRAIDv6/&name;.plg">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;">
+
+<CHANGES>
+##&name;
+
+###&version;
+- fixed memory display and calculation under 'System Overview'
+
+###2015.04.11
+- version update for new webGui
+
+###2015.02.01
+- fixed wrong display of system overview information. In certain cases.
+
+###2015.01.22
+- version update for webGui 2015.01.21
+
+###2014.12.07
+- fixed addition of info settings
+
+###2014.11.28
+- initial release for unRAID v6
+</CHANGES>
+
+<!--
+Copyright 2015, Bergware International
+Dynamix System Information - System hardware and BIOS details
+-->
+
+<!--
+The 'pre-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+cfg="/boot/config/plugins/dynamix/dynamix.cfg"
+
+add_key(){
+  key=$(echo $2|cut -d'=' -f1)
+  section=$(sed -n "/^\[$1\]/,/^\[/p" $cfg)
+  if [[ -z $section ]]; then
+    echo -e "[$1]\n$2" >> $cfg
+  else
+    if [[ $(echo $section|grep "$key="|wc -l) -eq 0 ]]; then
+      sed -i "$(sed -n "/^\[$1\]/,/^\[/=" $cfg|tail -1) i $2" $cfg
+    fi
+  fi
+}
+
+# Add sysinfo setting
+if [[ -e $cfg ]]; then
+  add_key 'display' 'sysinfo="/Tools/SystemProfiler"'
+else
+  echo -e "[display]\nsysinfo=\"/Tools/SystemProfiler\"" > $cfg
+fi
+
+# Remove old 'source' files
+rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null|grep -v '&version;')
+</INLINE>
+</FILE>
+
+<!--
+The 'source' file.
+-->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>https://raw.github.com/bergware/dynamix/master/archive/&name;-&version;.txz</URL>
+</FILE>
+
+<!--
+The 'post-install' script.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Update file access mode
+chmod 644 $(awk '/\.(htm|php|js|page|css|png|plg|gif|cfg|md)$/ {print "/"$0}' /var/log/packages/&name;-&version;)
+
+echo ""
+echo "-----------------------------------------------------------"
+echo " Plugin &name; is installed."
+echo " This plugin requires Dynamix webGui to operate"
+echo " Copyright 2015, Bergware International"
+echo " Version: &version;"
+echo "-----------------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+<!--
+The 'remove' script.
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+# Delete sysinfo setting
+sed -i '/^sysinfo=/d' /boot/config/plugins/webGui/webGui.cfg
+
+# Remove plugin related files
+rm -rf /boot/config/plugins/&name;
+
+# Uninstall the 'source' package
+removepkg &name;-&version;
+</INLINE>
+</FILE>
+
+</PLUGIN>
